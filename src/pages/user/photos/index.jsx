@@ -1,65 +1,71 @@
-import React, { useState, useEffect } from 'react';
-
+import { useState, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { useParams } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
+
 import { getUserPhotos } from '../../../api';
-import { PhotosLayout } from '../../../components';
+import { PhotosLayout, Spinner } from '../../../components';
+
+const PER_PAGE = 15;
 
 const UserPhotos = () => {
-	const { username } = useParams();
+	const { user } = useOutletContext();
 
 	const [photos, setPhotos] = useState([]);
-	const [totalPhotos, setTotalPhotos] = useState(null);
-	const [tempPhotos, setTempPhotos] = useState([]);
-	const [pageNumber, setPageNumber] = useState(1);
-	const [loadMore, setLoadMore] = useState(false);
-	const [isLoading, setIsLoading] = useState(true);
+	const [page, setPage] = useState(1);
+	const [total, setTotal] = useState(null);
+	const [isLoading, setIsLoading] = useState(false);
 
-	let perPage = 10;
+	const fetchPhotos = async () => {
+		if (isLoading) return;
 
-	useEffect(() => {
-		const user_photos_identifier = setTimeout(async () => {
-			if (pageNumber === 1 || loadMore) {
-				if (window.innerWidth >= 1024) perPage = 15;
-				const result = await getUserPhotos(username, pageNumber, perPage);
+		setIsLoading(true);
 
-				if (pageNumber === 1) {
-					setTotalPhotos(result.total);
-				}
-				setPhotos((prevPhotos) => [...prevPhotos, ...result.results]);
-				setPageNumber((prevPage) => prevPage + 1);
-				setTempPhotos(result.results);
-				setIsLoading(false);
-				setLoadMore(false);
+		try {
+			const result = await getUserPhotos(user.username, page, PER_PAGE);
+
+			setPhotos((prev) => [...prev, ...result.results]);
+			setPage((prev) => prev + 1);
+
+			if (total === null) {
+				setTotal(result.total);
 			}
-		}, 1000);
-
-		return () => {
-			clearTimeout(user_photos_identifier);
-		};
-	}, [username, loadMore]);
-
-	const loadMoreHandler = () => {
-		if (photos.length === totalPhotos) return;
-		setLoadMore(true);
+		} finally {
+			setIsLoading(false);
+		}
 	};
+
+	// initial fetch when user becomes available
+	useEffect(() => {
+		if (!user?.username) return;
+
+		setPhotos([]);
+		setPage(1);
+		setTotal(null);
+
+		fetchPhotos();
+	}, [user?.username]);
+
+	const hasMore = total === null || photos.length < total;
 
 	return (
 		<div>
 			<InfiniteScroll
+				style={{ overflow: 'visible' }}
 				dataLength={photos.length}
-				hasMore={true}
-				next={loadMoreHandler}
+				next={fetchPhotos}
+				hasMore={hasMore}
+				loader={
+					<div className='loading-spinner'>
+						<Spinner />
+					</div>
+				}
 			>
-				<PhotosLayout photos={tempPhotos} />
+				<PhotosLayout photos={photos} />
 			</InfiniteScroll>
 
 			<div className='user-footer'>
-				{photos.length === totalPhotos && totalPhotos !== 0 && (
-					<p>You all caught up 🤞</p>
-				)}
-
-				{photos.length === 0 && <p>No Photos Found 😑</p>}
+				{!isLoading && total === 0 && <p>No Photos Found 😑</p>}
+				{!hasMore && photos.length > 0 && <p>You’re all caught up 🤞</p>}
 			</div>
 		</div>
 	);

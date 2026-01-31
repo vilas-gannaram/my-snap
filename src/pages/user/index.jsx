@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-
-import { Link, useLocation, useParams, Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, useParams, Outlet } from 'react-router-dom';
 
 import { getUser } from '../../api';
 import { Spinner } from '../../components';
@@ -14,32 +13,36 @@ import image from '../../assets/images/image.png';
 import imageFill from '../../assets/images/image-fill.png';
 import heart from '../../assets/images/heart.png';
 import heartFill from '../../assets/images/heart-fill.png';
-// import collection from '../../assets/images/collection.png';
-// import collectionFill from '../../assets/images/collection-fill.png';
 
 import './index.scss';
 
 const User = () => {
 	const { username } = useParams();
-	const location = useLocation();
 
-	const [user, setUser] = useState({});
+	const [user, setUser] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		setIsLoading(true);
-		const user_identifier = setTimeout(async () => {
-			const result = await getUser(username);
-			setUser(result);
-			setIsLoading(false);
-		}, 500);
+		let isMounted = true;
+
+		const fetchUser = async () => {
+			setIsLoading(true);
+			try {
+				const result = await getUser(username);
+				if (isMounted) setUser(result);
+			} finally {
+				if (isMounted) setIsLoading(false);
+			}
+		};
+
+		fetchUser();
 
 		return () => {
-			clearTimeout(user_identifier);
+			isMounted = false;
 		};
 	}, [username]);
 
-	if (isLoading) {
+	if (isLoading || !user) {
 		return (
 			<div className='user-loading'>
 				<Spinner />
@@ -47,65 +50,80 @@ const User = () => {
 		);
 	}
 
+	const {
+		first_name,
+		last_name,
+		bio,
+		location,
+		for_hire,
+		profile_image,
+		social,
+		total_photos,
+		total_likes,
+	} = user;
+
 	return (
 		<section className='user-container'>
 			<div className='user-details'>
 				<div className='image-wrapper'>
-					<img src={user?.profile_image?.large} alt={user?.first_name} />
+					<img src={profile_image.large} alt={first_name} />
 				</div>
 
 				<div className='text-wrapper'>
 					<h2 className='user-name'>
-						{user?.first_name} {user?.last_name}
+						{first_name} {last_name}
 					</h2>
-					<p className='user-bio'>{user?.bio}</p>
+					{bio && <p className='user-bio'>{bio}</p>}
 
 					<div className='user-links-wrapper'>
-						{user?.for_hire && (
+						{for_hire && (
 							<div className='user-link'>
-								<img src={check} alt='checked' />
+								<img src={check} alt='' />
 								<p>Available for hire</p>
 							</div>
 						)}
 
-						{user?.location && (
+						{location && (
 							<div className='user-link location'>
-								<img src={locationPoint} alt='location' />
-								<p>{user.location}</p>
+								<img src={locationPoint} alt='' />
+								<p>{location}</p>
 							</div>
 						)}
 
 						<div className='social-links'>
-							{user?.social?.portfolio_url && (
+							{social?.portfolio_url && (
 								<a
-									href={user.social.portfolio_url}
+									href={social.portfolio_url}
 									target='_blank'
+									rel='noopener noreferrer'
 									className='social-link'
 								>
-									<img src={portfolio} alt='portfolio' />
-									<p>{user.social.portfolio_url}</p>
+									<img src={portfolio} alt='' />
+									<p>{social.portfolio_url}</p>
 								</a>
 							)}
 
-							{user?.social?.instagram_username && (
+							{social?.instagram_username && (
 								<a
-									href={`https://www.instagram.com/${user.social.instagram_username}`}
+									href={`https://www.instagram.com/${social.instagram_username}`}
 									target='_blank'
+									rel='noopener noreferrer'
 									className='social-link'
 								>
-									<img src={instagram} alt='instagram' />
-									<p>{user.social.instagram_username}</p>
+									<img src={instagram} alt='' />
+									<p>{social.instagram_username}</p>
 								</a>
 							)}
 
-							{user?.social?.twitter_username && (
+							{social?.twitter_username && (
 								<a
-									href={`https://twitter.com/${user.social.twitter_username}`}
+									href={`https://twitter.com/${social.twitter_username}`}
 									target='_blank'
+									rel='noopener noreferrer'
 									className='social-link'
 								>
-									<img src={twitter} alt='twitter' />
-									<p>{user.social.twitter_username}</p>
+									<img src={twitter} alt='' />
+									<p>{social.twitter_username}</p>
 								</a>
 							)}
 						</div>
@@ -113,63 +131,32 @@ const User = () => {
 				</div>
 			</div>
 
-			{/* user photos, likes, and collections */}
 			<div className='user-tabs'>
-				<Link
-					to=''
-					className={`user-tab ${
-						location.pathname === `/${username}` ? 'active' : ''
-					}`}
-				>
-					<img
-						src={location.pathname === `/${username}` ? imageFill : image}
-						alt='image'
-					/>
-					<p>
-						Photos <span className='count'>{user.total_photos}</span>
-					</p>
-				</Link>
+				<NavLink end to='' className='user-tab'>
+					{({ isActive }) => (
+						<>
+							<img src={isActive ? imageFill : image} alt='' />
+							<p>
+								Photos <span className='count'>{total_photos}</span>
+							</p>
+						</>
+					)}
+				</NavLink>
 
-				<Link
-					to='likes'
-					className={`user-tab ${
-						location.pathname === `/${username}/likes` ? 'active' : ''
-					}`}
-				>
-					<img
-						src={location.pathname === `/${username}/likes` ? heartFill : heart}
-						alt='heart'
-					/>
-
-					<p>
-						Likes <span className='count'>{user.total_likes}</span>
-					</p>
-				</Link>
-
-				{/* collections  */}
-
-				{/* <Link
-					to='collections'
-					className={`user-tab ${
-						location.pathname === `/${username}/collections` ? 'active' : ''
-					}`}
-				>
-					<img
-						src={
-							location.pathname === `/${username}/collections`
-								? collectionFill
-								: collection
-						}
-						alt='collection'
-					/>
-					<p>
-						Collections <span className='count'>{user.total_collections}</span>
-					</p>
-				</Link> */}
+				<NavLink to='likes' className='user-tab'>
+					{({ isActive }) => (
+						<>
+							<img src={isActive ? heartFill : heart} alt='' />
+							<p>
+								Likes <span className='count'>{total_likes}</span>
+							</p>
+						</>
+					)}
+				</NavLink>
 			</div>
 
 			<div className='user-tab-output'>
-				<Outlet />
+				<Outlet context={{ user }} />
 			</div>
 		</section>
 	);

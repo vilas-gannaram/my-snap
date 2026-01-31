@@ -7,9 +7,14 @@
 }
 
 .photo-container {
+	width: 90%;
+	max-width: 1440px;
+	margin: 2rem auto;
+
 	figcaption {
 		width: 90%;
 		margin: 2rem auto;
+
 		.user-details {
 			display: flex;
 			align-items: center;

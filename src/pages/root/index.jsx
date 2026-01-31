@@ -1,56 +1,39 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import logo from '../../assets/images/logo.svg';
 import './index.scss';
 
 const Root = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
-
-	const [searchWord, setSearchWord] = useState('');
-	const [showHeader, setShowHeader] = useState(true);
-
-	const inputChangeHandler = (e) => {
-		setSearchWord(e.target.value);
-	};
-
-	const formSubmitHandler = (event) => {
-		event.preventDefault();
-
-		if (!searchWord) return;
-		setSearchWord('');
-		navigate(`search/photos/${searchWord}`);
-	};
-
-	let lastScrollY = window.scrollY;
-	window.addEventListener('scroll', () => {
-		if (lastScrollY < window.scrollY) {
-			setShowHeader(false);
-		} else {
-			setShowHeader(true);
-		}
-		lastScrollY = window.scrollY;
-	});
+	const [input, setInput] = useState('');
 
 	return (
-		<>
-			<header className={`header-container ${showHeader ? 'show-header' : ''}`}>
+		<div className='header-wrapper'>
+			<header className='header-container'>
 				<nav className='primary-navigation-container'>
 					<Link to='/' className='logo-container'>
-						<img className='logo' src={logo} alt='logo' />
+						<img className='logo' src='/logo/1.png' alt='logo' />
 					</Link>
 
 					<form
-						onSubmit={formSubmitHandler}
+						onSubmit={(e) => {
+							e.preventDefault();
+
+							if (!input) return;
+							navigate(`search/photos/${input}`);
+							setInput('');
+						}}
 						className='primary-navigation-form'
 					>
 						<input
 							type='text'
 							name='search'
-							onChange={inputChangeHandler}
-							value={searchWord}
-							placeholder='search for high resolution photos...	'
+							onChange={(e) => {
+								setInput(e.target.value);
+							}}
+							value={input}
+							placeholder='Search for high resolution photos...	'
 						/>
 						<button type='submit' className='material-symbols-outlined'>
 							search
@@ -62,7 +45,7 @@ const Root = () => {
 			<main className='main-container'>
 				<Outlet />
 			</main>
-		</>
+		</div>
 	);
 };
 

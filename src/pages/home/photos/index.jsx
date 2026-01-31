@@ -1,67 +1,56 @@
-import React, { useState, useEffect } from 'react';
-
+import { useState, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
+
 import { PhotosLayout, Spinner } from '../../../components';
 import { getPhotosList } from '../../../api';
 import './index.scss';
 
+const PER_PAGE = 15;
+
 const Photos = () => {
 	const [photos, setPhotos] = useState([]);
-	const [tempPhotos, setTempPhotos] = useState([]);
-	const [pageNumber, setPageNumber] = useState(1);
-	const [totalPhotos, setTotalPhotos] = useState(null);
-	const [loadMore, setLoadMore] = useState(false);
-	const [isLoading, setIsLoading] = useState(true);
+	const [page, setPage] = useState(1);
+	const [total, setTotal] = useState(null);
+	const [isLoading, setIsLoading] = useState(false);
 
-	let perPage = 10;
+	const fetchPhotos = async () => {
+		if (isLoading) return;
 
-	useEffect(() => {
-		const photos_list_identifier = setTimeout(async () => {
-			if (loadMore || pageNumber === 1) {
-				if (window.innerWidth >= 1024) perPage = 15;
-				const result = await getPhotosList(pageNumber, perPage);
+		setIsLoading(true);
 
-				if (pageNumber === 1) {
-					setTotalPhotos(result.total);
-				}
+		try {
+			const result = await getPhotosList(page, PER_PAGE);
 
-				setPhotos((prevPhotos) => [...prevPhotos, ...result.results]);
-				setTempPhotos(result.results);
-				setPageNumber((prevPageNum) => prevPageNum + 1);
-				setIsLoading(false);
-				setLoadMore(false);
+			setPhotos((prev) => [...prev, ...result.results]);
+			setPage((prev) => prev + 1);
+
+			if (total === null) {
+				setTotal(result.total);
 			}
-		}, 500);
-
-		return () => {
-			clearTimeout(photos_list_identifier);
-		};
-	}, [loadMore]);
-
-	const loadMorePhotosHandler = () => {
-		if (photos.length === totalPhotos) return;
-		setLoadMore(true);
+		} finally {
+			setIsLoading(false);
+		}
 	};
+
+	const hasMore = total === null || photos.length < total;
 
 	return (
 		<div className='home-photos-container'>
-			{photos.length > 0 && (
-				<InfiniteScroll
-					dataLength={photos.length}
-					next={loadMorePhotosHandler}
-					hasMore={true}
-				>
-					<PhotosLayout photos={tempPhotos} />
-				</InfiniteScroll>
-			)}
+			<InfiniteScroll
+				dataLength={photos.length}
+				next={fetchPhotos}
+				hasMore={hasMore}
+				loader={
+					<div className='loading-spinner'>
+						<Spinner />
+					</div>
+				}
+			>
+				<PhotosLayout photos={photos} />
+			</InfiniteScroll>
 
-			{isLoading && (
-				<div className='loading-spinner'>
-					<Spinner />
-					{!isLoading && photos.length === totalPhotos && (
-						<p>You're caught all up 🙌</p>
-					)}
-				</div>
+			{!hasMore && photos.length > 0 && (
+				<p className='end-message'>You're caught all up 🙌</p>
 			)}
 		</div>
 	);
