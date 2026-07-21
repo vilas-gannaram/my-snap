@@ -1,4 +1,4 @@
-# 📸 Snap — Photo Browser using Unsplash API
+# 📸 Unsplash Gallery — Photo Browser using Unsplash API
 
 Snap is a photo browsing web application built using the Unsplash API.
 This project was originally created in 2022, when I was starting out in web development, and has since been cleaned up and refactored to improve structure, readability, and stability while keeping the original intent intact.
